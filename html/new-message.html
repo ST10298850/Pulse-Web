@@ -4,6 +4,52 @@
     <title>New Message</title>
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/new-message.css" />
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/database.js"></script>
+    <script type="text/javascript">
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sendButton = document.getElementById('btnSendMessage');
+            sendButton.addEventListener('click', handleSendMessage);
+        });
+
+        async function handleSendMessage() {
+            const recipientInput = document.getElementById('txtRecipient');
+            const messageInput = document.getElementById('txtMessageContent');
+
+            const recipientUsername = recipientInput.value.trim();
+            const messageText = messageInput.value.trim();
+
+            if (recipientUsername === EMPTY_STRING || messageText === EMPTY_STRING) {
+                alert("Please enter a username and a message.");
+                return;
+            }
+
+            const currentUser = window.parent.currentUser;
+
+            try {
+                const recipient = await getUserByName(recipientUsername);
+
+                if (!recipient) {
+                    alert("User not found. Please check the username and try again.");
+                    return;
+                }
+
+                await sendMessage(currentUser.UserAccountID, recipient.UserAccountID, messageText, false, null);
+
+                // Close the modal and refresh the main page
+                window.parent.closeNewMessageModal();
+                window.parent.frames['message-view-iframe'].loadContacts();
+                window.parent.frames['chat-view-iframe'].loadChat(recipient.UserAccountID);
+
+            } catch (error) {
+                console.error("Error sending message:", error);
+                alert("An error occurred while sending the message. Please try again.");
+            }
+        }
+
+    </script>
 </head>
 <body>
 
@@ -24,7 +70,6 @@
     <div class="new-message-form__actions">
 
         <button id="btnCancel" class="button button--secondary" onclick="window.parent.closeNewMessageModal()">Cancel</button>
-
         <button id="btnSendMessage" class="button button--primary">Send</button>
     </div>
 </form>

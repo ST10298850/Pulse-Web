@@ -4,37 +4,90 @@
     <title>Chat View</title>
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/chat-view.css" />
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/database.js"></script>
+    <script type="text/javascript">
+
+        let currentContactId = null;
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sendButton = document.getElementById('btnSend');
+            sendButton.addEventListener('click', handleSendMessage);
+        });
+
+        // This function is CALLED BY main.html
+        async function loadChat(contactId) {
+            console.log("chat-view.html: loadChat called with contactId:", contactId);
+            currentContactId = contactId;
+            currentUser = window.parent.currentUser;
+
+            const chatHeader = document.querySelector('.chat-view__header');
+            const messageContainer = document.querySelector('.chat-view__messages');
+
+            // 1. Get the contact's details
+            const contact = await getUserById(contactId);
+
+            // 2. Update the chat header
+            chatHeader.querySelector('.chat-view__avatar').innerText = (contact.firstName[0] + contact.lastName[0]).toUpperCase();
+            chatHeader.querySelector('.chat-view__name').innerText = contact.firstName + " " + contact.lastName;
+
+            // 3. Fetch and display the messages
+            const messages = await getMessages(currentUser.UserAccountID, contactId);
+            messageContainer.innerHTML = EMPTY_STRING; // Clear existing messages
+
+            if (messages.length === 0) {
+                messageContainer.innerHTML = `<div class="no-messages">No messages yet. Start the conversation!</div>`;
+                return;
+            }
+
+            for (const message of messages) {
+                const messageBubble = document.createElement('div');
+                messageBubble.classList.add('message-bubble');
+
+                if (message.senderId === currentUser.UserAccountID) {
+                    messageBubble.classList.add('message-bubble--sent');
+                } else {
+                    messageBubble.classList.add('message-bubble--received');
+                }
+
+                messageBubble.innerText = message.content;
+                messageContainer.appendChild(messageBubble);
+            }
+        }
+
+        async function handleSendMessage() {
+            const messageInput = document.getElementById('txtMessage');
+            const messageText = messageInput.value.trim();
+
+            if (messageText === EMPTY_STRING || !currentContactId || !currentUser) {
+                return;
+            }
+
+            await sendMessage(currentUser.UserAccountID, currentContactId, messageText, false, null);
+
+            // Clear the input and reload the chat
+            messageInput.value = EMPTY_STRING;
+            loadChat(currentContactId);
+        }
+
+    </script>
 </head>
 <body>
 
 <div class="chat-view">
 
     <header class="chat-view__header">
-        <div class="chat-view__avatar">JD</div>
+        <div class="chat-view__avatar"></div>
         <div class="chat-view__info">
-            <span class="chat-view__name">John Doe</span>
+            <span class="chat-view__name"></span>
             <span class="chat-view__status">Online</span>
         </div>
     </header>
 
     <main class="chat-view__messages">
-
-        <div class="message-bubble message-bubble--received">
-            Hey, are you free to chat? I have some updates on the project.
-        </div>
-
-        <div class="message-bubble message-bubble--sent">
-            Hi John! Sure, I'm free. What's up?
-        </div>
-
-        <div class="message-bubble message-bubble--received">
-            Great. I've finished the backend JS for the sign-in and registration. Your job is to style the frontend.
-        </div>
-
-        <div class="message-bubble message-bubble--sent">
-            Perfect, I'm working on the chat-view now. It's looking good.
-        </div>
-
+        <div class="no-messages">Select a contact to start chatting.</div>
     </main>
 
     <footer class="chat-view__input-bar">

@@ -15,21 +15,30 @@
         // --- THIS FUNCTION HAS BEEN UPDATED ---
         async function document_onload() {
             const lblUserInfo = document.getElementById("lblUserInfo");
-            const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+            currentUser = JSON.parse(sessionStorage.getItem("currentUser")); // Uses the global var
 
-            // NEW: Check if the user actually exists
             if (currentUser) {
-                // This code is now safe to run
                 lblUserInfo.innerHTML = currentUser.userName + " - " + currentUser.emailAddress;
 
-                // We can also safely run your teammate's test code
-                await sendMessage(currentUser.UserAccountID, 10, "This is a simple message", 0);
-                const messages = await getUserMessages(currentUser.UserAccountID);
-                alert(messages.length);
+                // REMOVED teammate's test code that was causing the crash.
+
+                // NEW: Tell the message-view iframe to load its contacts
+                // We will add the 'name' attribute in the next step.
+                window.frames['message-view-iframe'].loadContacts();
 
             } else {
-                // If no user is signed in, redirect them to the sign-in page
                 document.location = "sign-in.html";
+            }
+        }
+
+        // NEW: This function is called by message-view.html when a contact is clicked
+        function onContactSelected(contactId) {
+            console.log("main.html: onContactSelected called with contactId:", contactId);
+            const chatViewIframe = window.frames['chat-view-iframe'];
+            if (chatViewIframe) {
+                chatViewIframe.loadChat(contactId);
+            } else {
+                console.error("main.html: Could not find chat-view-iframe.");
             }
         }
 
@@ -115,10 +124,10 @@
 
     <main id="chat-container" class="pulse-chat-area">
         <div class="pulse-message-view">
-            <iframe src="message-view.html"></iframe>
+            <iframe name="message-view-iframe" src="message-view.html"></iframe>
         </div>
         <div class="pulse-chat-view">
-            <iframe src="chat-view.html"></iframe>
+            <iframe name="chat-view-iframe" src="chat-view.html"></iframe>
         </div>
     </main>
 

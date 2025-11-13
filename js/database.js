@@ -27,6 +27,12 @@ async function sqlQuery(rawSql)
 
   const data = await response.json();
 
+    if (data.results[0].response === undefined) {
+        console.error("Database error response:", JSON.stringify(data.results[0].error, null, 2));
+        console.error("Failing SQL Query:", rawSql);
+        throw new Error("Database query failed. See console for details.");
+    }
+
   return data.results[0].response.result;
 }
 
@@ -52,13 +58,11 @@ function getValue(result, iRow, columnName)
 
 async function createUserAccount(userAccount)
 {
-    // Check if the user account exists.
     const sql1 = `SELECT userName FROM UserAccount WHERE userName = '${userAccount.userName}'`;
     const sql1Result = await sqlQuery(sql1);
 
     if(sql1Result.rows.length == 0)
     {
-        // The user account does not exist.
         const sql2 = `INSERT INTO UserAccount (firstName, lastName, emailAddress, phoneNumber, userName, gender, profileImage, password) VALUES ('${userAccount.firstName}', '${userAccount.lastName}', '${userAccount.emailAddress}', '${userAccount.phoneNumber}', '${userAccount.userName}', '${userAccount.gender}', '${userAccount.profileImage}', '${userAccount.password}')`;
         await sqlQuery(sql2);
 
@@ -66,14 +70,12 @@ async function createUserAccount(userAccount)
     }
     else
     {
-        // The user does exist.
         return false;
     }
 }
 
 async function authenticate(userName, password)
 {
-    // Check if the user account exists.
     const sql1 = `SELECT userName, password FROM UserAccount WHERE userName = '${userName}'`;
     const sql1Result = await sqlQuery(sql1);
 
@@ -93,7 +95,7 @@ async function getUserById(userAccountId)
   const sql1Result = await sqlQuery(sql1);
 
   const userObj = new Object();
-  userObj.UserAccountID = getValue(sql1Result, "UserAccountID");
+  userObj.UserAccountID = getValue(sql1Result, 0, "UserAccountID");
   userObj.firstName = getValue(sql1Result, 0, "firstName");
   userObj.lastName = getValue(sql1Result, 0, "lastName");
   userObj.emailAddress = getValue(sql1Result, 0, "emailAddress");
@@ -104,6 +106,33 @@ async function getUserById(userAccountId)
   userObj.password = getValue(sql1Result, 0, "password");
 
   return userObj;
+}
+
+async function getUsersByIds(userIds) {
+    if (!userIds || userIds.length === 0) {
+        return [];
+    }
+
+    const sql = `SELECT * FROM UserAccount WHERE UserAccountID IN (${userIds.join(',')})`;
+    const result = await sqlQuery(sql);
+
+    const users = [];
+    for (let i = 0; i < result.rows.length; i++) {
+        const userObj = {
+            UserAccountID: getValue(result, i, "UserAccountID"),
+            firstName: getValue(result, i, "firstName"),
+            lastName: getValue(result, i, "lastName"),
+            emailAddress: getValue(result, i, "emailAddress"),
+            phoneNumber: getValue(result, i, "phoneNumber"),
+            userName: getValue(result, i, "userName"),
+            gender: getValue(result, i, "gender"),
+            profileImage: getValue(result, i, "profileImage"),
+            password: getValue(result, i, "password")
+        };
+        users.push(userObj);
+    }
+
+    return users;
 }
 
 async function getUserByName(userName)
@@ -125,81 +154,42 @@ async function getUserByName(userName)
   return userObj;
 }
 
-function containsElement(array, element)
-{
-  let result = false;
-
-  for(let i = 0; i < array.length; i++)
-  {
-    if(array[i] == element)
-    {
-      result = true;
-      break;
-    }
-  }
-
-  return result;
-}
-
 async function getUserChatList(userAccountId)
 {
-  const sql1 = `SELECT * FROM TextMessage WHERE UserAccountID = ${userAccountId}`;
-  const sql1Result = await sqlQuery(sql1);
+    const sql = `
+        SELECT c.UserAccountID FROM Message t JOIN IndividualChat c ON t.MessageID = c.MessageID WHERE t.UserAccountID = ${userAccountId}
+        UNION
+        SELECT t.UserAccountID FROM IndividualChat c JOIN Message t ON c.MessageID = t.MessageID WHERE c.UserAccountID = ${userAccountId}
+    `;
 
-  const sql2 = `SELECT COUNT(*) AS ROW_COUNT FROM TextMessage WHERE UserAccountID = ${userAccountId}`;
-  const sql2Result = await sqlQuery(sql2);
-  const rowCount = getValue(sql2Result, 0, "ROW_COUNT");
+    const result = await sqlQuery(sql);
 
-  const chatList = [];
+    const chatList = [];
+    for (let i = 0; i < result.rows.length; i++) {
+        chatList.push(getValue(result, i, "UserAccountID"));
+    }
 
-  for(let i = 0; i < rowCount; i++)
-  {
-    const textMessageId = getValue(sql1Result, i, "TextMessageID");
-    const sql3 = `SELECT * FROM IndividualChat WHERE TextMessageID = ${textMessageId}`
-    const sql3Result = await sqlQuery(sql3);
-    const recipientUser = getValue(sql3Result, 0, "UserAccountID");
-
-    if(!containsElement(messages, recipientUser))
-      chatList[chatList.length] = recipientUser;
-  }
-
-  const sql4 = `SELECT * FROM IndividualChat WHERE UserAccountID = ${userAccountId}`;
-  const sql4Result = await sqlQuery(sql4);
-
-  const sql5 = `SELECT COUNT(*) AS ROW_COUNT FROM IndividualChat WHERE UserAccountID = ${userAccountId}`;
-  const sql5Result = await sqlQuery(sql5);
-  const rowCount2 = getValue(sql5Result, 0, "ROW_COUNT");
-
-  for(let i = 0; i < rowCount2; i++)
-  {
-    const textMessageId = getValue(sql5Result, i, "TextMessageID");
-    const sql3 = `SELECT * FROM TextMessage WHERE TextMessageID = ${textMessageId}`
-    const sql3Result = await sqlQuery(sql3);
-    const recipientUser = getValue(sql3Result, 0, "UserAccountID");
-
-    if(!containsElement(messages, recipientUser))
-      chatList[chatList.length] = recipientUser;
-  }
-
-  return chatList;
+    return chatList;
 }
 
 async function sendMessage(senderId, receiverId, content, isHtml, attachments)
 {
-  const sql1 = `INSERT INTO TextMessage (UserAccountID, textMessage, isHtml) VALUES (${senderId}, '${content}', ${isHtml})`;
+  const isHtmlValue = isHtml ? 1 : 0;
+  // --- THIS QUERY HAS BEEN UPDATED ---
+  const sql1 = `INSERT INTO Message (UserAccountID, textMessage, isHtml, type, voiceNoteRef) VALUES (${senderId}, '${content}', ${isHtmlValue}, 'text', '')`;
   await sqlQuery(sql1);
 
   const sql2 = "SELECT last_insert_rowid() AS ROW_ID";
   const sql2Result = await sqlQuery(sql2);
   const rowId = getValue(sql2Result, 0, "ROW_ID");
 
-  const sql3 = `INSERT INTO IndividualChat (TextMessageID, UserAccountID) VALUES (${rowId}, ${receiverId})`;
+  const sql3 = `INSERT INTO IndividualChat (MessageID, UserAccountID) VALUES (${rowId}, ${receiverId})`;
   await sqlQuery(sql3);
 }
 
 async function getMessages(senderId, receiverId)
 {
-  const sql1 = `SELECT t.UserAccountID AS senderId, c.UserAccountId AS receiverId, t.TextMessageID, t.textMessage, t.isHtml FROM TextMessage t INNER JOIN IndividualChat c ON t.TextMessageID = c.TextMessageID WHERE (t.UserAccountID = ${senderId} AND c.UserAccountID = ${receiverId}) OR (t.UserAccountID = ${receiverId} AND c.UserAccountID = ${senderId})`;
+  const sql1 = `SELECT t.UserAccountID AS senderId, c.UserAccountID AS receiverId, t.MessageID, t.textMessage, t.isHtml FROM Message t INNER JOIN IndividualChat c ON t.MessageID = c.MessageID WHERE (t.UserAccountID = ${senderId} AND c.UserAccountID = ${receiverId}) OR (t.UserAccountID = ${receiverId} AND c.UserAccountID = ${senderId})`;
   const sql1Result = await sqlQuery(sql1);
 
   const messages = [];
@@ -209,19 +199,19 @@ async function getMessages(senderId, receiverId)
     const message = new Object();
     message.senderId = getValue(sql1Result, i, "senderId");
     message.receiverId = getValue(sql1Result, i, "receiverId");
-    message.textMessageId = getValue(sql1Result, i, "TextMessageID");
+    message.messageId = getValue(sql1Result, i, "MessageID");
     message.content = getValue(sql1Result, i, "textMessage");
     message.isHtml = getValue(sql1Result, i, "isHtml");
 
-    messages[messages.length] = message;
+    messages.push(message);
   }
 
   return messages;
 }
 
-async function readMessage(textMessageId)
+async function readMessage(messageId)
 {
-  const sql1 = `SELECT * FROM TextMessage WHERE TextMessageID = ${textMessageId}`;
+  const sql1 = `SELECT * FROM Message WHERE MessageID = ${messageId}`;
   const sql1Result = await sqlQuery(sql1);
 
   const obj = new Object();
