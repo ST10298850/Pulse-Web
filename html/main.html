@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="../css/pulse-menu.css" />
     <link rel="stylesheet" href="../css/nav-rail.css" />
     <link rel="stylesheet" href="../css/main-layout.css" />
+    <link rel="stylesheet" href="../css/modal.css" />
 
     <script src="../js/utils.js"></script>
     <script src="../js/database.js"></script>
@@ -30,6 +31,26 @@
                 // If no user is signed in, redirect them to the sign-in page
                 document.location = "sign-in.html";
             }
+        }
+
+        function openNewMessageModal() {
+            const modal = document.getElementById('new-message-modal');
+            const iframe = document.getElementById('new-message-iframe');
+
+            // This loads your new-message.html page into the popup
+            iframe.src = 'new-message.html';
+
+            modal.classList.add('modal-overlay--visible');
+        }
+
+        function closeNewMessageModal() {
+            const modal = document.getElementById('new-message-modal');
+            const iframe = document.getElementById('new-message-iframe');
+
+            modal.classList.remove('modal-overlay--visible');
+
+            // Unload the iframe to save resources
+            iframe.src = '';
         }
 
         function signOut() {
@@ -106,6 +127,12 @@
         <p>Your teammate can load a new settings.html iframe here.</p>
     </main>
 
+</div>
+
+<div class="modal-overlay" id="new-message-modal">
+    <div class="modal-content">
+        <iframe id="new-message-iframe" src=""></iframe>
+    </div>
 </div>
 </body>
 </html>

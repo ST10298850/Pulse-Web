@@ -1,0 +1,45 @@
+/*
+ * PulseWeb/css/modal.css
+ * Styles for the modal popup system
+ */
+
+/* The dark background overlay, hidden by default */
+.modal-overlay {
+    display: none; /* This is what hides it */
+    position: fixed; /* Stays in place even if you scroll */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Dark scrim, from your mobile styles */
+
+    /* These properties are now correctly activated
+      ONLY when the --visible class is added.
+    */
+    place-items: center;
+    z-index: 1000;
+}
+
+/* This is the class we'll add with JavaScript to show it */
+.modal-overlay--visible {
+    display: grid;
+}
+
+/* The white "popup" box */
+.modal-content {
+    width: 500px;
+    height: 550px; /* A good size for your new-message form */
+    background-color: var(--color-surface, #FFFFFF);
+    border-radius: 16px; /* Matches your mobile dialogs */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+
+    /* This is CRITICAL for the iframe inside */
+    overflow: hidden;
+}
+
+/* Makes the iframe fill the modal perfectly */
+.modal-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
