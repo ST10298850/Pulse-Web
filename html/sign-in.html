@@ -1,0 +1,71 @@
+<html>
+<head>
+    <title>Pulse Web - Instant Messaging App</title>
+     <link rel="stylesheet" href="../css/global.css" />
+     <script src="../js/database.js"></script>
+     <script type="text/javascript">
+
+        async function signIn() {
+            const userName = document.getElementById("txtUserName").value;
+            const password = document.getElementById("txtPassword").value;
+            const authorization = await authenticate(userName, password);
+
+            if(authorization)
+            {
+                const user = await getUserByName(userName);
+                sessionStorage.setItem("currentUser", JSON.stringify(user));
+                sessionStorage.setItem("userSignedIn", "true");
+
+                document.location = "main.html";
+            }
+            else
+            {
+                alert("Invalid username or password.");
+            }
+        }
+
+        function createAccount() {
+            document.location = "register.html";
+        }
+
+     </script>
+</head>
+<body class="pulse-body-center">
+    <div style="text-align: center">
+        <img class="logo-2" src="../images/pulse-logo.svg" />
+        <h2 style="margin-bottom: 0px">Welcome Back</h2>
+        <span style="color: rgb(90, 90, 90)">Sign in to your Pulse account</span>
+
+        <div style="width: fit-content; text-align: left">
+            <br />
+            <br />
+            <span>UserName:</span>
+            <br />
+            <input type="text" class="textbox-username" id="txtUserName" />
+
+
+            <br />
+            <br />
+            <span>Password:</span>
+            <br />
+            <input type="text" class="textbox-password" id="txtPassword" />
+
+
+            <br />
+            <br />
+            <br />
+            <button id="signIn" style="display:contents; cursor: pointer" onclick="signIn()">
+                <img src="../images/button-sign-in.svg" />
+            </button>
+            <br />
+            
+            <div style="width: fit-content; margin-top: 12px;">
+            <button style="display:contents; cursor: pointer" onclick="createAccount()">
+                <img src="../images/button-create-account.svg" />
+            </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

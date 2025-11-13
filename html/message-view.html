@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Message List</title>
+    <!-- Link to global styles (for fonts, colors, etc.) -->
+    <link rel="stylesheet" href="../css/global.css" />
+    <!-- Link to our new, specific styles -->
+    <link rel="stylesheet" href="../css/message-view.css" />
+
+    <script type="text/javascript">
+        function document_onload() {
+            // Your teammate's JS will go here
+        }
+
+        function openNewMessagePopup() {
+            // This is the function Matthew will use for the button
+            // It will open new-message.html in a popup window
+            alert("Open new message popup...");
+        }
+    </script>
+</head>
+<body onload="document_onload()">
+
+<!-- BEM Block: "message-list" -->
+<div class="message-list">
+
+    <!-- BEM Element: "message-list__header" -->
+    <header class="message-list__header">
+        <h1 class="message-list__title">Messages</h1>
+
+        <!-- This button is for your teammate's new message popup -->
+        <button class="message-list__new-button" onclick="openNewMessagePopup()" title="New Message">
+            <!-- Icon for "new message" (pencil) -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13.5 6.5L17.5 10.5M4 20H8L18.5 9.5C19.0304 8.96957 19.3284 8.25043 19.3284 7.5C19.3284 6.74957 19.0304 6.03043 18.5 5.5C17.9696 4.96957 17.2504 4.67157 16.5 4.67157C15.7496 4.67157 15.0304 4.96957 14.5 5.5L4 16V20Z" stroke="#0EA5E9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- BEM Element: "message-list__items" (this part will be scrollable) -->
+    <div class="message-list__items">
+
+        <!-- This is one "chat-item" Block. It's --active -->
+        <div class="chat-item chat-item--active">
+            <div class="chat-item__avatar">JD</div>
+            <div class="chat-item__content">
+                <h3 class="chat-item__name">John Doe</h3>
+                <p class="chat-item__preview">Hey, are you free to chat? I have some updates on...</p>
+            </div>
+        </div>
+
+        <!-- Another "chat-item" Block -->
+        <div class="chat-item">
+            <div class="chat-item__avatar">JS</div>
+            <div class="chat-item__content">
+                <h3 class="chat-item__name">Jane Smith</h3>
+                <p class="chat-item__preview">Okay, sounds good. See you then!</p>
+            </div>
+        </div>
+
+        <!-- Another "chat-item" Block -->
+        <div class="chat-item">
+            <div class="chat-item__avatar">MM</div>
+            <div class="chat-item__content">
+                <h3 class="chat-item__name">Matthew De Waal</h3>
+                <p class="chat-item__preview">The backend JS is all done.</p>
+            </div>
+        </div>
+
+    </div> <!-- / .message-list__items -->
+
+</div> <!-- / .message-list -->
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat View</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/chat-view.css" />
+</head>
+<body>
+
+<div class="chat-view">
+
+    <header class="chat-view__header">
+        <div class="chat-view__avatar">JD</div>
+        <div class="chat-view__info">
+            <span class="chat-view__name">John Doe</span>
+            <span class="chat-view__status">Online</span>
+        </div>
+    </header>
+
+    <main class="chat-view__messages">
+
+        <div class="message-bubble message-bubble--received">
+            Hey, are you free to chat? I have some updates on the project.
+        </div>
+
+        <div class="message-bubble message-bubble--sent">
+            Hi John! Sure, I'm free. What's up?
+        </div>
+
+        <div class="message-bubble message-bubble--received">
+            Great. I've finished the backend JS for the sign-in and registration. Your job is to style the frontend.
+        </div>
+
+        <div class="message-bubble message-bubble--sent">
+            Perfect, I'm working on the chat-view now. It's looking good.
+        </div>
+
+    </main>
+
+    <footer class="chat-view__input-bar">
+
+        <button class="icon-button" id="btnAttachFile" title="Attach file">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5 12H19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+
+        <input type="text" id="txtMessage" class="chat-view__input-textbox" placeholder="Type a message..." />
+
+        <button class="icon-button icon-button--primary" id="btnSend" title="Send">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </footer>
+
+</div> </body>
+</html>

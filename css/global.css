@@ -1,0 +1,243 @@
+/* global.css */
+/* =================================================== */
+/* GLOBAL STYLES (Based on your mobile app styles) */
+/* =================================================== */
+
+/* Re-using your mobile app fonts and colors */
+:root {
+    --font-primary: 'Calibri', 'Inter', sans-serif;
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #64748B;
+    --color-brand-primary: #0EA5E9;
+    --color-brand-border: #E2E8F0;
+    --color-surface: #FFFFFF;
+    --color-background: #F8FAFC;
+}
+
+/* This replaces the old .pulse-body-center */
+.pulse-body-center {
+    font-family: var(--font-primary);
+    background-color: var(--color-background);
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* =================================================== */
+/* BLOCK: welcome-card (for index.html) */
+/* =================================================== */
+
+.welcome-card {
+    background-color: var(--color-surface);
+    border-radius: 20px; /* Based on your mobile dialogs */
+    padding: 40px;
+    text-align: center;
+    width: 400px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); /* Softer shadow */
+    border: 1px solid var(--color-brand-border);
+}
+
+.welcome-card__logo {
+    width: 72px; /* From your sign_in layout */
+}
+
+.welcome-card__title {
+    font-size: 28px;
+    color: var(--color-text-primary);
+    font-weight: bold;
+    margin: 16px 0 8px 0;
+}
+
+.welcome-card__subtitle {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+}
+
+.welcome-card__description {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin-top: 24px;
+    margin-bottom: 32px;
+}
+
+/* =================================================== */
+/* BLOCK: button (A re-usable component) */
+/* =================================================== */
+
+.button {
+    font-family: var(--font-primary);
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 24px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    width: 100%; /* Make buttons fill their container */
+    box-sizing: border-box; /* Ensures padding doesn't break width */
+}
+
+/* --- MODIFIER: --primary */
+.button--primary {
+    background-color: var(--color-brand-primary);
+    color: white;
+}
+
+.button--primary:hover {
+    /* A simple hover effect */
+    background-color: #0c87c0; /* A slightly darker blue */
+}
+
+
+
+.pulse-body-center {
+    background-color: #E2E8F0;
+    background-image: url("../images/pulse-background.svg");
+    font-family: 'Calibri';
+    display: grid;
+    place-items: center;
+}
+
+.pulse-body {
+    background-color: #E2E8F0;
+    background-image: url("../images/pulse-background.svg");
+    font-family: 'Calibri';
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-right: 0px;
+    margin-bottom: 0px;
+}
+
+.logo {
+   width: 240px; 
+}
+
+.logo-2 {
+    width: 140px;
+}
+
+h1 {
+    font-size: 32pt;
+}
+
+p {
+    font-size: 12pt;
+}
+
+.textbox-default {
+    width: 300px;
+    height: 50px;
+    background-image: url("../images/textbox-default.svg");
+    background-repeat: no-repeat;
+    border: none;
+    padding-left: 40px;
+    font-size: 10pt;
+}
+
+.textbox-username {
+    width: 300px;
+    height: 50px;
+    background-image: url("../images/textbox-username.svg");
+    background-repeat: no-repeat;
+    border: none;
+    padding-left: 40px;
+    font-size: 10pt;
+}
+
+.textbox-username2 {
+    width: 300px;
+    height: 50px;
+    background-image: url("../images/textbox-username2.svg");
+    background-repeat: no-repeat;
+    border: none;
+    padding-left: 40px;
+    font-size: 10pt;
+}
+
+.textbox-password {
+    width: 300px;
+    height: 50px;
+    
+    background-image: url("../images/textbox-password.svg");
+    background-repeat: no-repeat;
+    border: none;
+    padding-left: 40px;
+    font-size: 10pt;
+}
+
+.textbox-password2 {
+    width: 300px;
+    height: 50px;
+    
+    background-image: url("../images/textbox-password2.svg");
+    background-repeat: no-repeat;
+    border: none;
+    padding-left: 40px;
+    font-size: 10pt;
+}
+
+.textbox-email {
+    width: 300px;
+    height: 50px;
+    
+    background-image: url("../images/textbox-email.svg");
+    background-repeat: no-repeat;
+    border: none;
+    padding-left: 40px;
+    font-size: 10pt;
+}
+
+.textbox-phone {
+    width: 300px;
+    height: 50px;
+    
+    background-image: url("../images/textbox-phone.svg");
+    background-repeat: no-repeat;
+    border: none;
+    padding-left: 40px;
+    font-size: 10pt;
+}
+
+.pulse-menu {
+    width: 100%;
+    display: flex;
+    background-color: rgba(15, 15, 35, 0.2);
+    color: black;
+    height: 110px;
+    justify-content: center;
+}
+
+.pulse-chat {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+    height: 75vh;
+}
+
+.pulse-message-view {
+    width: 20%;
+}
+
+.pulse-chat-view {
+    width: 60%;
+}
+
+.button-class {
+    width: 80px;
+    height: 38px;
+}
+
+/* --- MODIFIER: --secondary (for outline buttons) --- */
+.button--secondary {
+    background-color: transparent;
+    color: var(--color-text-secondary, #64748B);
+    border: 1px solid var(--color-brand-border, #E2E8F0);
+}
+
+.button--secondary:hover {
+    background-color: var(--color-background, #F8FAFC);
+}

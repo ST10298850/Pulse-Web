@@ -1,0 +1,111 @@
+<html>
+<head>
+    <title>Pulse Web - Instant Messaging App</title>
+    <link rel="stylesheet" href="../css/global.css" />
+
+    <link rel="stylesheet" href="../css/pulse-menu.css" />
+    <link rel="stylesheet" href="../css/nav-rail.css" />
+    <link rel="stylesheet" href="../css/main-layout.css" />
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/database.js"></script>
+    <script type="text/javascript">
+
+        // --- THIS FUNCTION HAS BEEN UPDATED ---
+        async function document_onload() {
+            const lblUserInfo = document.getElementById("lblUserInfo");
+            const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+
+            // NEW: Check if the user actually exists
+            if (currentUser) {
+                // This code is now safe to run
+                lblUserInfo.innerHTML = currentUser.userName + " - " + currentUser.emailAddress;
+
+                // We can also safely run your teammate's test code
+                await sendMessage(currentUser.UserAccountID, 10, "This is a simple message", 0);
+                const messages = await getUserMessages(currentUser.UserAccountID);
+                alert(messages.length);
+
+            } else {
+                // If no user is signed in, redirect them to the sign-in page
+                document.location = "sign-in.html";
+            }
+        }
+
+        function signOut() {
+            sessionStorage.setItem("currentUser", EMPTY_STRING);
+            sessionStorage.setItem("userSignedIn", "false");
+            document.location = "sign-in.html";
+        }
+
+        // JS functions for navigation
+        function showMessages() {
+            document.getElementById('chat-container').style.display = 'flex';
+            document.getElementById('settings-container').style.display = 'none';
+
+            document.getElementById('nav-btn-messages').classList.add('nav-rail__item--active');
+            document.getElementById('nav-btn-settings').classList.remove('nav-rail__item--active');
+        }
+
+        function showSettings() {
+            document.getElementById('chat-container').style.display = 'none';
+            document.getElementById('settings-container').style.display = 'flex';
+
+            document.getElementById('nav-btn-messages').classList.remove('nav-rail__item--active');
+            document.getElementById('nav-btn-settings').classList.add('nav-rail__item--active');
+        }
+
+    </script>
+</head>
+<body class="pulse-body" onload="document_onload()">
+
+<header class="pulse-menu">
+    <div class="pulse-menu__content">
+        <div class="pulse-menu__brand">
+            <img class="pulse-menu__logo" src="../images/pulse-logo.svg" />
+            <h2 class="pulse-menu__title">Pulse</h2>
+            <span class="pulse-menu__subtitle">Connect instantly...</span>
+        </div>
+        <div class="pulse-menu__user-info">
+            <span id="lblUserInfo"></span>
+            <button class="button button--secondary" onclick="signOut()">Sign out</button>
+        </div>
+    </div>
+</header>
+
+<div class="pulse-container">
+
+    <nav class="nav-rail">
+        <button id="nav-btn-messages" class="nav-rail__item nav-rail__item--active" onclick="showMessages()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="nav-rail__label">Messages</span>
+        </button>
+
+        <button id="nav-btn-settings" class="nav-rail__item" onclick="showSettings()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.14 12.94C19.76 12.59 20.31 12.12 20.79 11.56C21.27 11 21.65 10.37 21.93 9.69L20.24 8.35C20.17 8.79 19.99 9.22 19.72 9.62C19.45 10.02 19.1 10.38 18.68 10.68L18.39 12.86C17.8 13.2 17.17 13.47 16.5 13.66L16.2 15.84C16.3 16.16 16.38 16.49 16.43 16.82C16.48 17.15 16.5 17.48 16.5 17.82C16.5 18.06 16.49 18.3 16.47 18.54C16.45 18.78 16.41 19.02 16.36 19.26L18.06 20.6C17.9 19.88 17.61 19.22 17.21 18.62C16.81 18.02 16.31 17.5 15.72 17.06L13.6 17.38C13.26 17.92 12.86 18.38 12.4 18.77C11.94 19.16 11.43 19.47 10.88 19.71L9.13 21.03C8.4 20.72 7.74 20.29 7.14 19.75C6.54 19.21 6.02 18.58 5.6 17.88L7.38 16.63C7.8 16.47 8.22 16.23 8.62 15.93C9.02 15.63 9.38 15.28 9.68 14.86L7.56 14.54C7.22 13.96 6.94 13.33 6.75 12.66L4.57 12.97C4.24 12.38 4.01 11.75 3.87 11.08C3.73 10.41 3.66 9.72 3.66 9C3.66 8.28 3.73 7.59 3.87 6.92C4.01 6.25 4.24 5.62 4.57 5.03L6.75 5.34C6.94 4.67 7.22 4.04 7.56 3.46L9.68 3.14C10 2.72 10.37 2.37 10.78 2.1C11.19 1.83 11.62 1.65 12.07 1.56L12.38 0.4C13.04 0.14 13.73 0 14.43 0C15.15 0 15.85 0.15 16.5 0.45L16.79 2.63C17.4 2.94 17.96 3.32 18.47 3.77C18.98 4.22 19.41 4.73 19.76 5.3L21.93 5.03C22.25 5.62 22.48 6.25 22.62 6.92C22.76 7.59 22.83 8.28 22.83 9C22.83 9.72 22.76 10.41 22.62 11.08C22.48 11.75 22.25 12.38 21.93 12.97L20.24 14.31C20.16 14.04 20.06 13.78 19.94 13.52C19.82 13.26 19.69 13 19.55 12.75L19.14 12.94Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14.43 12C15.5346 12 16.43 11.1046 16.43 10C16.43 8.89543 15.5346 8 14.43 8C13.3254 8 12.43 8.89543 12.43 10C12.43 11.1046 13.3254 12 14.43 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="nav-rail__label">Settings</span>
+        </button>
+    </nav>
+
+    <main id="chat-container" class="pulse-chat-area">
+        <div class="pulse-message-view">
+            <iframe src="message-view.html"></iframe>
+        </div>
+        <div class="pulse-chat-view">
+            <iframe src="chat-view.html"></iframe>
+        </div>
+    </main>
+
+    <main id="settings-container" class="pulse-settings-area">
+        <h2>Settings</h2>
+        <p>Your teammate can load a new settings.html iframe here.</p>
+    </main>
+
+</div>
+</body>
+</html>

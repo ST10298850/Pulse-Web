@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Message</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/new-message.css" />
+</head>
+<body>
+
+<form class="new-message-form" onsubmit="return false;">
+
+    <h1 class="new-message-form__title">New Message</h1>
+
+    <div class="form-group">
+        <label for="txtRecipient" class="form-group__label">To (Username):</label>
+        <input type="text" id="txtRecipient" class="form-group__input" placeholder="Enter a username..." />
+    </div>
+
+    <div class="form-group">
+        <label for="txtMessageContent" class="form-group__label">Message:</label>
+        <textarea id="txtMessageContent" class="form-group__textarea" placeholder="Type your message..."></textarea>
+    </div>
+
+    <div class="new-message-form__actions">
+
+        <button id="btnCancel" class="button button--secondary">Cancel</button>
+
+        <button id="btnSendMessage" class="button button--primary">Send</button>
+    </div>
+</form>
+
+</body>
+</html>

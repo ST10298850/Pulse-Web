@@ -1,0 +1,75 @@
+/*
+ * PulseWeb/css/nav-rail.css
+ * Styles for the main vertical navigation rail.
+ */
+
+/* =A "wrapper" we will add to main.html */
+.pulse-container {
+    display: flex;
+    /* Calculates height to be 100% of the viewport
+      minus the top menu (110px).
+    */
+    height: calc(100vh - 110px);
+}
+
+/* =================================================== */
+/* BLOCK: nav-rail
+/* =================================================== */
+
+.nav-rail {
+    width: 80px;
+    background-color: var(--color-surface, #FFFFFF);
+    border-right: 1px solid var(--color-brand-border, #E2E8F0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 24px;
+    flex-shrink: 0; /* Prevents the rail from shrinking */
+}
+
+/* --- ELEMENT: nav-rail__item --- */
+.nav-rail__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 16px;
+    color: var(--color-text-secondary, #64748B); /* Icon color */
+}
+
+/* --- ELEMENT: nav-rail__label --- */
+.nav-rail__label {
+    font-family: var(--font-primary, 'Calibri');
+    font-size: 11px;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+/* We set the icon color using 'color'.
+   This line makes the <svg> tag inherit that color.
+*/
+.nav-rail__item svg {
+    stroke: currentColor;
+}
+
+/* --- MODIFIER: nav-rail__item--active --- */
+.nav-rail__item--active {
+    background-color: #E0F2FE; /* Mobile app's active blue bg */
+    color: var(--color-brand-primary, #0EA5E9); /* Mobile app's active blue icon */
+}
+
+/* --- MODIFIER: nav-rail__item--active (for the icon) --- */
+.nav-rail__item--active svg {
+    stroke: var(--color-brand-primary, #0EA5E9);
+}
+
+/* --- ELEMENT: nav-rail__item (hover state) --- */
+.nav-rail__item:not(.nav-rail__item--active):hover {
+    background-color: var(--color-background, #F8FAFC);
+}

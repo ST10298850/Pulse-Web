@@ -1,0 +1,164 @@
+<html>
+<head>
+    <title>Pulse Web - Instant Messaging App</title>
+    <link rel="stylesheet" href="../css/global.css" />
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="../js/database.js"></script>
+    <script src="../js/encryption.js"></script>
+    <script src="../js/utils.js"></script>
+    <script type="text/javascript">
+
+        async function createAccount() {
+            const firstName = document.getElementById("txtFirstName").value;
+            const lastName = document.getElementById("txtLastName").value;
+            const emailAddress = document.getElementById("txtEmailAddress").value;
+            const phoneNumber = document.getElementById("txtPhoneNumber").value;
+            
+            const rbMale = document.getElementById("rbMale");
+            const rbFemale = document.getElementById("rbFemale");
+            const rbOther = document.getElementById("rbOther");
+
+            let gender = "M";
+
+            rbMale.onclick = function() {
+                gender = "M";
+                rbMale.checked = true;
+                rbFemale.checked = false;
+                rbOther.checked = false;
+            }
+
+            rbFemale.onclick = function() {
+                gender = "F";
+                rbMale.checked = false;
+                rbFemale.checked = true;
+                rbOther.checked = false;
+            }
+
+            rbOther.onclick = function() {
+                gender = "O";
+                rbMale.checked = false;
+                rbFemale.checked = false;
+                rbOther.checked = true;
+            }
+
+            const userName = document.getElementById("txtUserName").value;
+            const password = document.getElementById("txtPassword").value;
+            const confirmPassword = document.getElementById("txtConfirmPassword").value;
+            const bPrivacy = document.getElementById("chkPrivacy").checked;
+            
+            const validation = firstName.length > 0 &&
+                                lastName.length > 0 &&
+                                emailAddress.length > 0 &&
+                                phoneNumber.length > 0 &&
+                                userName.length > 0 &&
+                                bPrivacy &&
+                                password == confirmPassword &&
+                                isStrongPassword(password);
+
+            if(validation)
+            {
+                const userObj = new Object();
+                userObj.firstName = firstName;
+                userObj.lastName = lastName;
+                userObj.emailAddress = emailAddress;
+                userObj.phoneNumber = phoneNumber;
+                userObj.userName = userName;
+                userObj.gender = gender;
+                userObj.profileImage = EMPTY_STRING;
+                userObj.password = password;
+
+                const result = await createUserAccount(userObj);
+
+                if(result)
+                    document.location = "sign-in.html";
+            }
+        }
+
+        function cancelRegistration() {
+            document.location = "sign-in.html";
+        }
+
+    </script>
+</head>
+<body class="pulse-body-center">
+    <div style="text-align: center">
+        <img class="logo-2" src="../images/pulse-logo.svg" />
+        <h2 style="margin-bottom: 0px">Create Account</h2>
+        <span style="color: rgb(90, 90, 90)">Join the Pulse community</span>
+
+        <div style="width: fit-content; text-align: left">
+            <br />
+            <br />
+            <span>First Name:</span>
+            <br />
+            <input type="text" class="textbox-default" id="txtFirstName" />
+
+            <br />
+            <br />
+            <span>Last Name:</span>
+            <br />
+            <input type="text" class="textbox-default" id="txtLastName" />
+
+            <br />
+            <br />
+            <span>Email Address:</span>
+            <br />
+            <input type="text" class="textbox-email" id="txtEmailAddress" />
+
+            <br />
+            <br />
+            <span>Phone Number:</span>
+            <br />
+            <input type="text" class="textbox-phone" id="txtPhoneNumber" />
+
+            <br />
+            <br />
+            <span>Gender:</span>
+            <br />
+            <input type="radio" id="rbMale" /> Male
+            <input type="radio" id="rbFemale" /> Female
+            <input type="radio" id="rbOther" /> Other
+
+            <br />
+            <br />
+            <span>Username:</span>
+            <br />
+            <input type="text" class="textbox-username2" id="txtUserName" />
+
+            <br />
+            <br />
+            <span>Password:</span>
+            <br />
+            <input type="text" class="textbox-password2" id="txtPassword" />
+
+            <br />
+            <br />
+            <span>Confirm Password:</span>
+            <br />
+            <input type="text" class="textbox-password2" id="txtConfirmPassword" />
+
+            <br />
+            <br />
+            <input type="checkbox" id="chkPrivacy" /> I agree to the Terms of Service and Privacy Policy.
+
+            <br />
+            <br />
+            <br />
+            <button style="display:contents; cursor: pointer" onclick="createAccount()">
+                <img src="../images/button-create-account2.svg" />
+            </button>
+            <br />
+
+            <div style="width: fit-content; margin-top: 12px">
+            <button style="display:contents; cursor: pointer" onclick="cancelRegistration()">
+                <img src="../images/button-cancel.svg" />
+            </button>
+            </div>
+            <br />
+        </div>
+    </div>
+
+</body>
+</html>

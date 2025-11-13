@@ -1,0 +1,87 @@
+/*
+ * PulseWeb/css/new-message.css
+ * Styles for the new message popup form
+ */
+
+/* =================================================== */
+/* GLOBAL SETTINGS (for this popup)
+/* =================================================== */
+body {
+    font-family: var(--font-primary, 'Calibri', 'Inter', sans-serif);
+    margin: 0;
+    padding: 24px;
+    background-color: var(--color-surface, #FFFFFF);
+    color: var(--color-text-primary, #0F172A);
+}
+
+/* =================================================== */
+/* BLOCK: new-message-form
+/* =================================================== */
+.new-message-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.new-message-form__title {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--color-text-primary, #0F172A);
+    margin: 0 0 24px 0;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-brand-border, #E2E8F0);
+}
+
+/* =================================================== */
+/* BLOCK: form-group (A re-usable form component)
+/* =================================================== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group__label {
+    font-size: 14px;
+    color: var(--color-text-primary, #0F172A);
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.form-group__input,
+.form-group__textarea {
+    width: 100%;
+    border: 1px solid var(--color-brand-border, #E2E8F0);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-family: var(--font-primary, 'Calibri');
+    box-sizing: border-box; /* Ensures padding doesn't break width */
+}
+
+.form-group__input:focus,
+.form-group__textarea:focus {
+    outline: none;
+    border-color: var(--color-brand-primary, #0EA5E9);
+}
+
+.form-group__textarea {
+    height: 150px;
+    resize: none; /* Disables the user from resizing it */
+}
+
+/* =================================================== */
+/* ELEMENT: new-message-form__actions
+/* =================================================== */
+.new-message-form__actions {
+    display: flex;
+    justify-content: flex-end; /* Aligns buttons to the right */
+    gap: 12px;
+    margin-top: 8px;
+}
+
+/* We need to override the global .button style (width: 100%)
+   so the buttons fit side-by-side.
+*/
+.new-message-form__actions .button {
+    width: auto;
+    padding: 12px 20px;
+}

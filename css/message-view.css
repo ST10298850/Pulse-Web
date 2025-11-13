@@ -1,0 +1,122 @@
+/*
+ * PulseWeb/css/message-view.css
+ * Styles for the contact/message list
+ */
+
+/* =================================================== */
+/* GLOBAL SETTINGS (for this iframe)
+/* =================================================== */
+body {
+    font-family: var(--font-primary, 'Calibri', 'Inter', sans-serif);
+    margin: 0;
+    background-color: var(--color-surface, #FFFFFF);
+}
+
+/* =================================================== */
+/* BLOCK: message-list
+/* =================================================== */
+.message-list {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Make it fill the full iframe height */
+}
+
+/* --- ELEMENT: message-list__header --- */
+.message-list__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--color-brand-border, #E2E8F0);
+    flex-shrink: 0; /* Prevents header from shrinking */
+}
+
+/* --- ELEMENT: message-list__title --- */
+.message-list__title {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--color-text-primary, #0F172A);
+    margin: 0;
+}
+
+/* --- ELEMENT: message-list__new-button --- */
+/* This button will open the new-message.html popup */
+.message-list__new-button {
+    background-color: transparent;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+}
+
+.message-list__new-button:hover {
+    opacity: 0.7;
+}
+
+/* --- ELEMENT: message-list__items --- */
+.message-list__items {
+    overflow-y: auto; /* Makes the list scrollable */
+    flex-grow: 1; /* Allows this element to fill remaining space */
+}
+
+/* =================================================== */
+/* BLOCK: chat-item (for the list)
+/* =================================================== */
+.chat-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-brand-border, #E2E8F0);
+    cursor: pointer;
+}
+
+.chat-item:hover {
+    background-color: var(--color-background, #F8FAFC);
+}
+
+/* --- MODIFIER: chat-item--active --- */
+.chat-item--active {
+    background-color: #E0F2FE; /* Your mobile app's "active" blue */
+    border-right: 3px solid var(--color-brand-primary, #0EA5E9);
+}
+
+/* --- ELEMENT: chat-item__avatar --- */
+.chat-item__avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--color-brand-border, #E2E8F0);
+    margin-right: 12px;
+    /* In a real app, this would be an <img> */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--color-text-secondary, #64748B);
+    flex-shrink: 0;
+}
+
+/* --- ELEMENT: chat-item__content --- */
+.chat-item__content {
+    flex-grow: 1;
+    overflow: hidden; /* Important for text truncation */
+}
+
+/* --- ELEMENT: chat-item__name --- */
+.chat-item__name {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--color-text-primary, #0F172A);
+    margin: 0 0 4px 0;
+}
+
+/* --- ELEMENT: chat-item__preview --- */
+.chat-item__preview {
+    font-size: 14px;
+    color: var(--color-text-secondary, #64748B);
+    margin: 0;
+
+    /* This adds the "..." if the text is too long */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
