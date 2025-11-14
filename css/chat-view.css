@@ -167,3 +167,8 @@ body {
 .icon-button--primary:hover {
     background-color: #0c87c0; /* Darker blue */
 }
+
+/* Add this anywhere in the file */
+.hidden {
+    display: none !important; /* Use !important to ensure it overrides other styles */
+}

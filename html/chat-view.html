@@ -86,18 +86,77 @@
             document.getElementById("txtMessage").value = '';
             loadChatHistory(currentContactId);
         }
-        
+
         function handleAttachFile() {
-            // This is complex, for now we just log it
-            console.log("Attach file button clicked. Dropbox integration needed.");
-            alert("File attachment UI not built yet.");
-            // In a real app, this would open a file picker.
+            // This "clicks" the hidden file input
+            document.getElementById("file-input").click();
+        }
+
+        async function handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file || !currentContactId) return;
+
+            console.log("File selected:", file.name);
+
+            // This is a placeholder. In a real app, you would upload
+            // the file to Dropbox/S3 and get a real URL.
+            // For now, we'll just pretend.
+            const fakeUrl = "https://example.com/uploads/" + file.name;
+            const messageContent = file.name; // We'll send the name as the content
+            const currentUser = window.parent.currentUser;
+
+            try {
+                // Send the message with the 'file' type and the "URL"
+                await sendMessage(currentUser.UserAccountID, currentContactId, messageContent, 'file', fakeUrl);
+
+                // Reload the chat to show the new file message
+                loadChatHistory(currentContactId);
+            } catch (error) {
+                console.error("Error sending file message:", error);
+            }
+
+            // Clear the file input so you can select the same file again
+            event.target.value = null;
+        }
+
+        // This function runs every time the user types in the text box
+        function handleTextInput() {
+            const messageText = document.getElementById("txtMessage").value;
+            const sendButton = document.getElementById("btnSend");
+            const recordButton = document.getElementById("btnRecord");
+
+            if (messageText.length > 0) {
+                // Show Send, Hide Record
+                sendButton.classList.remove("hidden");
+                recordButton.classList.add("hidden");
+            } else {
+                // Show Record, Hide Send
+                sendButton.classList.add("hidden");
+                recordButton.classList.remove("hidden");
+            }
+        }
+
+        // This is a placeholder for your voice recording logic
+        function handleStartRecording() {
+            alert("Voice recording UI not built yet!");
+            // In a real app, this would start the browser's audio recording API.
+            // Then on send, it would call:
+            // await sendMessage(currentUser.ID, currentContactId, "Voice Note", 'voice', 'path/to/audio.mp3');
+            // loadChatHistory(currentContactId);
+        }
+
+        // We also need to call handleTextInput() once on load
+        // to set the correct button
+        window.onload = function() {
+            handleTextInput();
         }
 
     </script>
 </head>
 <body>
 <div class="chat-view">
+
+    <input type="file" id="file-input" class="hidden" onchange="handleFileSelected(event)" />
     
     <header class="chat-view__header">
         <div id="header-avatar" class="chat-view__avatar">...</div>
@@ -118,12 +177,20 @@
             </svg>
         </button>
 
-        <input type="text" id="txtMessage" class="chat-view__input-textbox" placeholder="Type a message..." />
+        <input type="text" id="txtMessage" class="chat-view__input-textbox" placeholder="Type a message..." oninput="handleTextInput()"/>
 
         <button class="icon-button icon-button--primary" id="btnSend" title="Send" onclick="handleSendText()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+
+        <button class="icon-button icon-button--primary hidden" id="btnRecord" title="Record Voice Note" onclick="handleStartRecording()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1A3 3 0 0 0 9 4V12A3 3 0 0 0 12 15A3 3 0 0 0 15 12V4A3 3 0 0 0 12 1Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M19 10V12A7 7 0 0 1 5 12V10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 19V23" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </button>
     </footer>
