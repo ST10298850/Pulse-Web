@@ -10,82 +10,133 @@
 
     <script type="text/javascript">
 
-        // This function is CALLED BY main.html
+        let pollingInterval = null;
+
+        function startPolling() {
+            if (pollingInterval) clearInterval(pollingInterval); // Clear any existing timer
+            pollingInterval = setInterval(loadContacts, 5000);
+        }
+        
+        // --- NEW: Non-destructive visual update functions ---
+
+        // Called by parent to set the active item
+        function updateActiveVisuals(contactId) {
+            const listElement = document.getElementById("contact-list");
+            // Remove active class from all other items
+            const allItems = listElement.querySelectorAll('.chat-item');
+            allItems.forEach(item => {
+                if (item.dataset.contactId !== contactId) {
+                    item.classList.remove('chat-item--active');
+                } else {
+                    item.classList.add('chat-item--active');
+                }
+            });
+        }
+
+        // Called by parent to update the unread status of a single item
+        function updateUnreadVisuals(contactId, hasUnread) {
+            const item = document.querySelector(`.chat-item[data-contact-id='${contactId}']`);
+            if (item) {
+                if (hasUnread) {
+                    item.classList.add('chat-item--unread');
+                } else {
+                    item.classList.remove('chat-item--unread');
+                }
+            }
+        }
+
+        // --- REWRITTEN: Intelligent DOM patching instead of full reload ---
         async function loadContacts() {
-            // NEW: 1. Check if the function is even being called
             console.log("Message-view: loadContacts() called.");
 
             const listElement = document.getElementById("contact-list");
             const currentUser = window.parent.currentUser;
+            const activeContactId = window.parent.activeContactId; // Get state from parent
 
             if (!currentUser) {
                 console.error("Message-view: No current user found in parent window.");
                 return;
             }
 
-            // NEW: 2. Log the user ID to make sure it's correct
             console.log("Message-view: Loading contacts for UserAccountID:", currentUser.UserAccountID);
 
-            // Clear the list
-            listElement.innerHTML = EMPTY_STRING;
-
             const chatList = await getUserChatList(currentUser.UserAccountID);
-
-            // NEW: 3. Log the list of contact IDs
             console.log("Message-view: Fetched chat list (User IDs):", chatList);
 
             if (chatList.length === 0) {
-                console.warn("Message-view: No contacts found in chat list.");
-                listElement.innerHTML = "<p style='padding: 20px; color: #64748B; font-size: 14px;'>No contacts yet.</p>";
+                if (!listElement.hasChildNodes()) {
+                    listElement.innerHTML = "<p style='padding: 20px; color: #64748B; font-size: 14px;'>No contacts yet.</p>";
+                }
                 return;
             }
 
-            // 2. Get all users in the chat list in a single call
+            // Fetch latest data
+            const latestMessageIds = await getLatestMessagePerChat(currentUser.UserAccountID, chatList);
+            const chatReadState = window.parent.chatState;
             const users = await getUsersByIds(chatList);
-
-            // --- NEW LOGGING ADDED ---
             console.log("Message-view: All fetched contacts (chats):", users);
-            // -------------------------
 
-            // 3. Loop through each user and create the HTML
+            // --- INTELLIGENT UPDATE LOGIC ---
             for (const user of users) {
+                const contactId = user.UserAccountID;
+                let chatItem = listElement.querySelector(`.chat-item[data-contact-id='${contactId}']`);
 
-                // 3. Create the HTML for this contact
-                const chatItem = document.createElement('div');
-                chatItem.className = 'chat-item';
+                // 1. If the item doesn't exist in the DOM, create it
+                if (!chatItem) {
+                    chatItem = document.createElement('div');
+                    chatItem.className = 'chat-item';
+                    chatItem.dataset.contactId = contactId; // Use data-attributes to identify elements
 
-                chatItem.onclick = function() {
-                    window.parent.onContactSelected(user.UserAccountID);
-                };
+                    chatItem.onclick = function() {
+                        // ONLY tell the parent what happened. Do not reload here.
+                        window.parent.onContactSelected(contactId);
+                    };
 
-                const avatar = document.createElement('div');
-                avatar.className = 'chat-item__avatar';
-                avatar.innerText = (user.firstName[0] + user.lastName[0]).toUpperCase();
+                    const avatar = document.createElement('div');
+                    avatar.className = 'chat-item__avatar';
+                    avatar.innerText = (user.firstName[0] + user.lastName[0]).toUpperCase();
 
-                const content = document.createElement('div');
-                content.className = 'chat-item__content';
+                    const content = document.createElement('div');
+                    content.className = 'chat-item__content';
 
-                const name = document.createElement('h3');
-                name.className = 'chat-item__name';
-                name.innerText = user.firstName + " " + user.lastName;
+                    const name = document.createElement('h3');
+                    name.className = 'chat-item__name';
+                    name.innerText = user.firstName + " " + user.lastName;
 
-                const preview = document.createElement('p');
-                preview.className = 'chat-item__preview';
-                preview.innerText = "Click to view chat...";
+                    const preview = document.createElement('p');
+                    preview.className = 'chat-item__preview';
+                    preview.innerText = "Click to view chat...";
 
-                content.appendChild(name);
-                content.appendChild(preview);
-                chatItem.appendChild(avatar);
-                chatItem.appendChild(content);
+                    content.appendChild(name);
+                    content.appendChild(preview);
+                    chatItem.appendChild(avatar);
+                    chatItem.appendChild(content);
 
-                listElement.appendChild(chatItem);
+                    listElement.appendChild(chatItem);
+                    console.log("Message-view: Created new DOM element for contact:", user.userName);
+                }
 
-                // NEW: 5. Confirm that the contact was added to the HTML
-                console.log("Message-view: Successfully added contact to list:", user.userName);
+                // 2. Update its state (active and unread)
+                // Active state
+                if (contactId === activeContactId) {
+                    chatItem.classList.add('chat-item--active');
+                } else {
+                    chatItem.classList.remove('chat-item--active');
+                }
+
+                // Unread state
+                const latestMessageId = latestMessageIds[user.UserAccountID] || 0;
+                const lastReadId = chatReadState[user.UserAccountID] || 0;
+
+                if (latestMessageId > lastReadId) {
+                    chatItem.classList.add('chat-item--unread');
+                } else {
+                    chatItem.classList.remove('chat-item--unread');
+                }
             }
         }
     </script>
-</head>
+</head> 
 <body>
 
 <div class="message-list">

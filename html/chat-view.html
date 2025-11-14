@@ -5,90 +5,129 @@
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/chat-view.css" />
     <script src="../js/utils.js"></script>
+    <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script> <!-- NEW: Dropbox SDK library -->
     <script src="../js/database.js"></script>
+    <script src="../js/dropbox.js"></script>
 
     <script type="text/javascript">
         let currentContactId = null; // Store who we are talking to
-        
+        let chatInterval = null;
+        let lastMessageIdRendered = 0; // NEW: Track the last message ID rendered for the current chat
+        // --- NEW: Voice Recording State ---
+        let isRecording = false;
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // Called by main.html to set the active chat and trigger the first load
+        function setActiveChat(contactId) {
+            if (currentContactId !== contactId) { // Only clear and reset if it's a new chat
+                currentContactId = contactId;
+                lastMessageIdRendered = 0; // Reset for a new chat
+                const messagesElement = document.getElementById("message-list");
+                messagesElement.innerHTML = ''; // Clear messages for the new chat
+                
+                // Update header immediately for the new chat
+                const headerName = document.getElementById("header-name");
+                const headerAvatar = document.getElementById("header-avatar");
+                getUserById(contactId).then(contact => {
+                    headerName.innerText = contact.firstName + " " + contact.lastName;
+                    headerAvatar.innerText = (contact.firstName[0] + contact.lastName[0]).toUpperCase();
+                });
+            }
+            
+            loadChatHistory(contactId); // Load immediately (or refresh for existing chat)
+            if (chatInterval) clearInterval(chatInterval); // Clear old timer
+            chatInterval = setInterval(() => loadChatHistory(currentContactId), 3000); // Start new timer
+        }
+
         // This function is CALLED BY main.html
         async function loadChatHistory(contactId) {
-            currentContactId = contactId; // Save the contact ID
-            const messagesElement = document.getElementById("message-list");
-            const headerName = document.getElementById("header-name");
-            const headerAvatar = document.getElementById("header-avatar");
+            // Only proceed if the contactId matches the currently active chat
+            if (contactId !== currentContactId) {
+                return;
+            }
 
+            const messagesElement = document.getElementById("message-list");
             // 1. Get our own user ID from the parent
             const currentUser = window.parent.currentUser;
             if (!currentUser) return;
-            
-            // 2. Get the contact's info to update the header
-            const contact = await getUserById(contactId);
-            headerName.innerText = contact.firstName + " " + contact.lastName;
-            headerAvatar.innerText = (contact.firstName[0] + contact.lastName[0]).toUpperCase();
-            
-            // 3. Clear old messages
-            messagesElement.innerHTML = '';
+
+            // Determine if the user is scrolled near the bottom
+            const isScrolledToBottom = messagesElement.scrollHeight - messagesElement.clientHeight <= messagesElement.scrollTop + 20; // 20px buffer
             
             // 4. Get the message history
-            const messages = await getMessages(currentUser.UserAccountID, contactId);
+            const allMessages = await getMessages(currentUser.UserAccountID, contactId);
             
+            let currentChatLatestMessageId = 0;
+            const newMessagesToRender = [];
+
             // 5. Loop and display messages
-            for (const message of messages) {
+            for (const message of allMessages) {
+                if (message.messageId > lastMessageIdRendered) {
+                    newMessagesToRender.push(message);
+                }
+                if (message.messageId > currentChatLatestMessageId) {
+                    currentChatLatestMessageId = message.messageId;
+                }
+            }
+
+            // Append only new messages
+            for (const message of newMessagesToRender) {
                 const bubble = document.createElement('div');
                 bubble.classList.add('message-bubble');
+                bubble.dataset.messageId = message.messageId; // Add data attribute for identification
 
-                // Check who sent it
                 if (message.senderId === currentUser.UserAccountID) {
                     bubble.classList.add('message-bubble--sent');
                 } else {
                     bubble.classList.add('message-bubble--received');
                 }
                 
-                // NEW: Check the message type
+                // --- TEMPLATES UPDATED ---
                 if (message.type === 'voice') {
-                    // It's a voice note, create an audio player
-                    bubble.innerHTML = `
-                        <strong>Voice Note:</strong>
-                        <audio controls src="${message.voiceNoteRef}"></audio>
-                    `;
-                    // Note: 'message.voiceNoteRef' must be a real URL to a .mp3 file
-                    
+                    bubble.innerHTML = `<audio controls src="${message.voiceNoteRef}"></audio>`;
                 } else if (message.type === 'file') {
-                    // It's a file, create a download link
                     bubble.innerHTML = `
-                        <strong>File Attachment:</strong>
-                        <a href="${message.voiceNoteRef}" target="_blank">${message.content}</a>
+                        <a href="${message.voiceNoteRef}" download="${message.content}" class="file-attachment">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21.44 11.05L12.25 20.24C10.12 22.37 6.63 22.37 4.5 20.24C2.37 18.11 2.37 14.62 4.5 12.5L13.69 3.31C14.89 2.11 16.7 2.11 17.9 3.31C19.1 4.51 19.1 6.32 17.9 7.52L9.41 16.01C8.81 16.61 7.86 16.61 7.26 16.01C6.66 15.41 6.66 14.46 7.26 13.86L14.83 6.29" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>${message.content}</span>
+                        </a>
                     `;
-                    // Note: 'voiceNoteRef' is re-used for the file URL
-                    
                 } else {
-                    // It's just a text message
                     bubble.innerText = message.content;
                 }
                 
                 messagesElement.appendChild(bubble);
             }
-            
-            // Auto-scroll to the bottom
-            messagesElement.scrollTop = messagesElement.scrollHeight;
+            // Update the lastMessageIdRendered
+            if (currentChatLatestMessageId > 0) {
+                lastMessageIdRendered = currentChatLatestMessageId;
+                window.parent.onChatViewed(contactId, lastMessageIdRendered); // Inform parent about the latest read message
+            }
+
+            // Tell the parent window that we have viewed this chat up to the latest message
+            // Scroll to bottom only if user was already at the bottom or new messages arrived
+            if (newMessagesToRender.length > 0 && isScrolledToBottom) {
+                messagesElement.scrollTop = messagesElement.scrollHeight;
+            }
         }
 
         async function handleSendText() {
-            const messageContent = document.getElementById("txtMessage").value;
-            if (!messageContent || !currentContactId) return; // Don't send empty
+            const messageInput = document.getElementById("txtMessage");
+            const messageContent = messageInput.value;
+            if (!messageContent || !currentContactId) return;
             
             const currentUser = window.parent.currentUser;
-            
-            // Call your new, powerful sendMessage function
             await sendMessage(currentUser.UserAccountID, currentContactId, messageContent, 'text');
             
-            // Clear the input and reload the chat
-            document.getElementById("txtMessage").value = '';
+            messageInput.value = '';
+            handleTextInput();
             loadChatHistory(currentContactId);
         }
-
+        
         function handleAttachFile() {
-            // This "clicks" the hidden file input
             document.getElementById("file-input").click();
         }
 
@@ -96,60 +135,118 @@
             const file = event.target.files[0];
             if (!file || !currentContactId) return;
 
-            console.log("File selected:", file.name);
-
-            // This is a placeholder. In a real app, you would upload
-            // the file to Dropbox/S3 and get a real URL.
-            // For now, we'll just pretend.
-            const fakeUrl = "https://example.com/uploads/" + file.name;
-            const messageContent = file.name; // We'll send the name as the content
             const currentUser = window.parent.currentUser;
+            const uniqueFileName = `${Date.now()}-${file.name}`;
 
             try {
-                // Send the message with the 'file' type and the "URL"
-                await sendMessage(currentUser.UserAccountID, currentContactId, messageContent, 'file', fakeUrl);
+                // 1. Upload the file to Dropbox
+                const response = await dbx.filesUpload({ path: '/' + uniqueFileName, contents: file });
+                
+                // 2. Create a shareable link
+                const linkResponse = await dbx.sharingCreateSharedLinkWithSettings({ path: response.result.path_display });
+                const fileUrl = linkResponse.result.url;
 
-                // Reload the chat to show the new file message
-                loadChatHistory(currentContactId);
+                // 3. Call the new database function with all the file metadata
+                await sendFileMessage(
+                    currentUser.UserAccountID,
+                    currentContactId,
+                    file.name,
+                    file.size,
+                    fileUrl // Store the Dropbox URL
+                );
+
+                loadChatHistory(currentContactId); // Refresh the chat
             } catch (error) {
-                console.error("Error sending file message:", error);
+                console.error('Error uploading file to Dropbox or sending message:', error);
+                alert('Failed to send file. Please see the console for details.');
             }
 
-            // Clear the file input so you can select the same file again
             event.target.value = null;
         }
 
-        // This function runs every time the user types in the text box
         function handleTextInput() {
             const messageText = document.getElementById("txtMessage").value;
             const sendButton = document.getElementById("btnSend");
             const recordButton = document.getElementById("btnRecord");
 
-            if (messageText.length > 0) {
-                // Show Send, Hide Record
+            if (messageText.trim().length > 0) {
                 sendButton.classList.remove("hidden");
                 recordButton.classList.add("hidden");
             } else {
-                // Show Record, Hide Send
                 sendButton.classList.add("hidden");
                 recordButton.classList.remove("hidden");
             }
         }
 
-        // This is a placeholder for your voice recording logic
-        function handleStartRecording() {
-            alert("Voice recording UI not built yet!");
-            // In a real app, this would start the browser's audio recording API.
-            // Then on send, it would call:
-            // await sendMessage(currentUser.ID, currentContactId, "Voice Note", 'voice', 'path/to/audio.mp3');
-            // loadChatHistory(currentContactId);
+        // --- NEW: Voice Recording Logic ---
+
+        function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
         }
 
-        // We also need to call handleTextInput() once on load
-        // to set the correct button
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                isRecording = true;
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        const dataUrl = e.target.result;
+                        const currentUser = window.parent.currentUser;
+                        await sendMessage(currentUser.UserAccountID, currentContactId, "Voice Note", 'voice', dataUrl);
+                        loadChatHistory(currentContactId);
+                    };
+                    reader.readAsDataURL(audioBlob);
+                };
+
+                mediaRecorder.start();
+                updateRecordButtonUI(true);
+
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                alert("Could not access microphone. Please ensure you have given permission.");
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+                isRecording = false;
+                updateRecordButtonUI(false);
+            }
+        }
+
+        function updateRecordButtonUI(isRec) {
+            const recordButton = document.getElementById("btnRecord");
+            const icon = recordButton.querySelector("svg");
+            if (isRec) {
+                recordButton.title = "Stop Recording";
+                icon.innerHTML = `<path d="M6 6h12v12H6z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`; // Stop icon
+            } else {
+                recordButton.title = "Record Voice Note";
+                icon.innerHTML = `
+                    <path d="M12 1A3 3 0 0 0 9 4V12A3 3 0 0 0 12 15A3 3 0 0 0 15 12V4A3 3 0 0 0 12 1Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M19 10V12A7 7 0 0 1 5 12V10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 19V23" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                `; // Mic icon
+            }
+        }
+
         window.onload = function() {
             handleTextInput();
-        }
+        };
 
     </script>
 </head>
@@ -167,10 +264,10 @@
     </header>
 
     <main class="chat-view__messages" id="message-list">
-        </main>
+    </main>
 
     <footer class="chat-view__input-bar">
-
+        
         <button class="icon-button" id="btnAttachFile" title="Attach file" onclick="handleAttachFile()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M21.44 11.05L12.25 20.24C10.12 22.37 6.63 22.37 4.5 20.24C2.37 18.11 2.37 14.62 4.5 12.5L13.69 3.31C14.89 2.11 16.7 2.11 17.9 3.31C19.1 4.51 19.1 6.32 17.9 7.52L9.41 16.01C8.81 16.61 7.86 16.61 7.26 16.01C6.66 15.41 6.66 14.46 7.26 13.86L14.83 6.29" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -178,7 +275,7 @@
         </button>
 
         <input type="text" id="txtMessage" class="chat-view__input-textbox" placeholder="Type a message..." oninput="handleTextInput()"/>
-
+        
         <button class="icon-button icon-button--primary" id="btnSend" title="Send" onclick="handleSendText()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -186,7 +283,7 @@
             </svg>
         </button>
 
-        <button class="icon-button icon-button--primary hidden" id="btnRecord" title="Record Voice Note" onclick="handleStartRecording()">
+        <button class="icon-button icon-button--primary hidden" id="btnRecord" title="Record Voice Note" onclick="toggleRecording()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 1A3 3 0 0 0 9 4V12A3 3 0 0 0 12 15A3 3 0 0 0 15 12V4A3 3 0 0 0 12 1Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M19 10V12A7 7 0 0 1 5 12V10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

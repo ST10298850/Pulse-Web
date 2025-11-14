@@ -79,6 +79,27 @@ body {
     border-right: 3px solid var(--color-brand-primary, #0EA5E9);
 }
 
+/* --- MODIFIER: chat-item--unread --- */
+.chat-item--unread .chat-item__name {
+    font-weight: 900; /* Bolder font for unread chats */
+}
+
+.chat-item--unread .chat-item__content {
+    position: relative;
+}
+
+.chat-item--unread .chat-item__content::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--color-brand-primary, #0EA5E9);
+}
+
 /* --- ELEMENT: chat-item__avatar --- */
 .chat-item__avatar {
     width: 48px;

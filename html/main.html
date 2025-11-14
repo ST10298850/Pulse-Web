@@ -12,36 +12,44 @@
     <script src="../js/database.js"></script>
     <script type="text/javascript">
 
-        async function document_onload() {
-            const lblUserInfo = document.getElementById("lblUserInfo");
-            currentUser = JSON.parse(sessionStorage.getItem("currentUser")); // Uses the global var
+        let chatState = {}; // Holds the last read message ID for each chat
+        let activeContactId = null;
 
-            if (currentUser) {
-                lblUserInfo.innerHTML = currentUser.userName + " - " + currentUser.emailAddress;
-                window.frames['message-view-iframe'].loadContacts();
-
-            } else {
-                document.location = "sign-in.html";
-            }
+        function initialize() {
+            // This function will be called after the entire page is loaded.
         }
 
         // Called by message-view.html when a contact is clicked
         function onContactSelected(contactId) {
             console.log("main.html: onContactSelected called with contactId:", contactId);
+            
+            // Update the central active contact ID
+            activeContactId = contactId;
+
             const chatViewIframe = window.frames['chat-view-iframe'];
             if (chatViewIframe) {
-                // --- FUNCTION NAME UPDATED ---
-                chatViewIframe.loadChatHistory(contactId);
+                chatViewIframe.setActiveChat(contactId);
             } else {
                 console.error("main.html: Could not find chat-view-iframe.");
             }
+
+            // Tell the message-view to update its visuals without a full reload
+            window.frames['message-view-iframe'].updateActiveVisuals(contactId);
         }
 
         // Called by new-message.html after a new message is sent
         function onNewMessageSent(newContactId) {
             closeNewMessageModal();
             window.frames['message-view-iframe'].loadContacts();
-            window.frames['chat-view-iframe'].loadChatHistory(newContactId);
+            window.frames['chat-view-iframe'].setActiveChat(newContactId); // Use setActiveChat to ensure proper initialization and polling
+        }
+
+        // Called by chat-view.html to mark a chat as "read"
+        function onChatViewed(contactId, latestMessageId) {
+            chatState[contactId] = latestMessageId;
+            // Just update the visuals, don't do a destructive reload
+            const messageView = window.frames['message-view-iframe'];
+            messageView.updateUnreadVisuals(contactId, false);
         }
 
         function openNewMessageModal() {
@@ -80,7 +88,7 @@
 
     </script>
 </head>
-<body class="pulse-body" onload="document_onload()">
+<body class="pulse-body">
 
 <header class="pulse-menu">
     <div class="pulse-menu__content">
@@ -136,5 +144,26 @@
         <iframe id="new-message-iframe" src=""></iframe>
     </div>
 </div>
+
+<script>
+    // This script runs after all HTML is parsed, ensuring iframes are available.
+    window.onload = function() {
+        const lblUserInfo = document.getElementById("lblUserInfo");
+        // Define currentUser on the main window object so iframes can access it.
+        window.chatState = {}; // Explicitly attach chatState to the window
+        window.currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+
+        if (window.currentUser) {
+            lblUserInfo.innerHTML = window.currentUser.userName + " - " + window.currentUser.emailAddress;
+            
+            // Now that we know the user exists, do the first load and start the timer.
+            const messageView = window.frames['message-view-iframe'];
+            messageView.loadContacts();
+            messageView.startPolling();
+        } else {
+            document.location = "sign-in.html";
+        }
+    };
+</script>
 </body>
 </html>

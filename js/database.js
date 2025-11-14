@@ -213,12 +213,43 @@ async function sendMessage(senderId, receiverId, content, messageType = 'text', 
   await sqlQuery(sql3);
 }
 
+async function sendFileMessage(senderId, receiverId, fileName, fileSize, fileUrl) {
+    // 1. Create the FileObject to get a FileObjectID
+    const sql1 = `INSERT INTO FileObject (UserAccountID, fileName, fileSize) VALUES (${senderId}, '${fileName}', ${fileSize})`;
+    await sqlQuery(sql1);
+
+    const sql2 = "SELECT last_insert_rowid() AS ROW_ID";
+    const sql2Result = await sqlQuery(sql2);
+    const fileObjectId = getValue(sql2Result, 0, "ROW_ID");
+
+    // 2. Create the Message. The 'voiceNoteRef' will now store the file's URL/reference,
+    // and the 'textMessage' will be the filename.
+    const sql3 = `INSERT INTO Message (UserAccountID, textMessage, isHtml, type, voiceNoteRef) 
+                  VALUES (${senderId}, '${fileName}', 0, 'file', '${fileUrl}')`;
+    await sqlQuery(sql3);
+
+    const sql4 = "SELECT last_insert_rowid() AS ROW_ID";
+    const sql4Result = await sqlQuery(sql4);
+    const messageId = getValue(sql4Result, 0, "ROW_ID");
+
+    // 3. Link the Message and FileObject in the Attachment table
+    const sql5 = `INSERT INTO Attachment (MessageID, FileObjectID) VALUES (${messageId}, ${fileObjectId})`;
+    await sqlQuery(sql5);
+
+    // 4. Create the chat link for the receiver
+    const sql6 = `INSERT INTO IndividualChat (MessageID, UserAccountID) VALUES (${messageId}, ${receiverId})`;
+    await sqlQuery(sql6);
+}
+
 async function getMessages(senderId, receiverId)
 {
-  // NEW: Added t.type and t.voiceNoteRef to the query
-  const sql1 = `SELECT t.UserAccountID AS senderId, c.UserAccountID AS receiverId, t.MessageID, t.textMessage, t.isHtml, t.type, t.voiceNoteRef 
+  // Join with Attachment and FileObject to get file data if it exists
+  const sql1 = `SELECT t.UserAccountID AS senderId, c.UserAccountID AS receiverId, t.MessageID, t.textMessage, t.isHtml, t.type, t.voiceNoteRef,
+                       fo.fileName, fo.fileSize
                 FROM Message t INNER JOIN IndividualChat c ON t.MessageID = c.MessageID 
-                WHERE (t.UserAccountID = ${senderId} AND c.UserAccountID = ${receiverId}) OR (t.UserAccountID = ${receiverId} AND c.UserAccountID = ${senderId})`;
+                LEFT JOIN Attachment a ON t.MessageID = a.MessageID
+                LEFT JOIN FileObject fo ON a.FileObjectID = fo.FileObjectID
+                WHERE (t.UserAccountID = ${senderId} AND c.UserAccountID = ${receiverId}) OR (t.UserAccountID = ${receiverId} AND c.UserAccountID = ${senderId}) ORDER BY t.MessageID ASC`;
   const sql1Result = await sqlQuery(sql1);
 
   const messages = [];
@@ -234,6 +265,8 @@ async function getMessages(senderId, receiverId)
     // NEW: Add the new fields to the object
     message.type = getValue(sql1Result, i, "type");
     message.voiceNoteRef = getValue(sql1Result, i, "voiceNoteRef");
+    message.fileName = getValue(sql1Result, i, "fileName");
+    message.fileSize = getValue(sql1Result, i, "fileSize");
 
     messages.push(message);
   }
@@ -250,4 +283,30 @@ async function readMessage(messageId)
   obj.isHtml = getValue(sql1Result, 0, "isHtml");
 
   return obj;
+}
+
+async function getLatestMessagePerChat(userId, contactIds) {
+    if (contactIds.length === 0) {
+        return {};
+    }
+
+    const sql = `
+        SELECT 
+            CASE
+                WHEN m.UserAccountID = ${userId} THEN ic.UserAccountID
+                ELSE m.UserAccountID
+            END as contactId,
+            MAX(m.MessageID) as latestMessageId
+        FROM Message m
+        JOIN IndividualChat ic ON m.MessageID = ic.MessageID
+        WHERE (m.UserAccountID = ${userId} AND ic.UserAccountID IN (${contactIds.join(',')}))
+           OR (ic.UserAccountID = ${userId} AND m.UserAccountID IN (${contactIds.join(',')}))
+        GROUP BY contactId;
+    `;
+    const result = await sqlQuery(sql);
+    const latestIds = {};
+    for (let i = 0; i < result.rows.length; i++) {
+        latestIds[getValue(result, i, "contactId")] = getValue(result, i, "latestMessageId");
+    }
+    return latestIds;
 }
