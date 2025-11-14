@@ -4,110 +4,130 @@
     <title>Chat View</title>
     <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/chat-view.css" />
-
     <script src="../js/utils.js"></script>
     <script src="../js/database.js"></script>
+
     <script type="text/javascript">
-
-        let currentContactId = null;
-        let currentUser = null;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const sendButton = document.getElementById('btnSend');
-            sendButton.addEventListener('click', handleSendMessage);
-        });
-
+        let currentContactId = null; // Store who we are talking to
+        
         // This function is CALLED BY main.html
-        async function loadChat(contactId) {
-            console.log("chat-view.html: loadChat called with contactId:", contactId);
-            currentContactId = contactId;
-            currentUser = window.parent.currentUser;
+        async function loadChatHistory(contactId) {
+            currentContactId = contactId; // Save the contact ID
+            const messagesElement = document.getElementById("message-list");
+            const headerName = document.getElementById("header-name");
+            const headerAvatar = document.getElementById("header-avatar");
 
-            const chatHeader = document.querySelector('.chat-view__header');
-            const messageContainer = document.querySelector('.chat-view__messages');
-
-            // 1. Get the contact's details
+            // 1. Get our own user ID from the parent
+            const currentUser = window.parent.currentUser;
+            if (!currentUser) return;
+            
+            // 2. Get the contact's info to update the header
             const contact = await getUserById(contactId);
-
-            // 2. Update the chat header
-            chatHeader.querySelector('.chat-view__avatar').innerText = (contact.firstName[0] + contact.lastName[0]).toUpperCase();
-            chatHeader.querySelector('.chat-view__name').innerText = contact.firstName + " " + contact.lastName;
-
-            // 3. Fetch and display the messages
+            headerName.innerText = contact.firstName + " " + contact.lastName;
+            headerAvatar.innerText = (contact.firstName[0] + contact.lastName[0]).toUpperCase();
+            
+            // 3. Clear old messages
+            messagesElement.innerHTML = '';
+            
+            // 4. Get the message history
             const messages = await getMessages(currentUser.UserAccountID, contactId);
-            messageContainer.innerHTML = EMPTY_STRING; // Clear existing messages
-
-            if (messages.length === 0) {
-                messageContainer.innerHTML = `<div class="no-messages">No messages yet. Start the conversation!</div>`;
-                return;
-            }
-
+            
+            // 5. Loop and display messages
             for (const message of messages) {
-                const messageBubble = document.createElement('div');
-                messageBubble.classList.add('message-bubble');
+                const bubble = document.createElement('div');
+                bubble.classList.add('message-bubble');
 
+                // Check who sent it
                 if (message.senderId === currentUser.UserAccountID) {
-                    messageBubble.classList.add('message-bubble--sent');
+                    bubble.classList.add('message-bubble--sent');
                 } else {
-                    messageBubble.classList.add('message-bubble--received');
+                    bubble.classList.add('message-bubble--received');
                 }
-
-                messageBubble.innerText = message.content;
-                messageContainer.appendChild(messageBubble);
+                
+                // NEW: Check the message type
+                if (message.type === 'voice') {
+                    // It's a voice note, create an audio player
+                    bubble.innerHTML = `
+                        <strong>Voice Note:</strong>
+                        <audio controls src="${message.voiceNoteRef}"></audio>
+                    `;
+                    // Note: 'message.voiceNoteRef' must be a real URL to a .mp3 file
+                    
+                } else if (message.type === 'file') {
+                    // It's a file, create a download link
+                    bubble.innerHTML = `
+                        <strong>File Attachment:</strong>
+                        <a href="${message.voiceNoteRef}" target="_blank">${message.content}</a>
+                    `;
+                    // Note: 'voiceNoteRef' is re-used for the file URL
+                    
+                } else {
+                    // It's just a text message
+                    bubble.innerText = message.content;
+                }
+                
+                messagesElement.appendChild(bubble);
             }
+            
+            // Auto-scroll to the bottom
+            messagesElement.scrollTop = messagesElement.scrollHeight;
         }
 
-        async function handleSendMessage() {
-            const messageInput = document.getElementById('txtMessage');
-            const messageText = messageInput.value.trim();
-
-            if (messageText === EMPTY_STRING || !currentContactId || !currentUser) {
-                return;
-            }
-
-            await sendMessage(currentUser.UserAccountID, currentContactId, messageText, false, null);
-
+        async function handleSendText() {
+            const messageContent = document.getElementById("txtMessage").value;
+            if (!messageContent || !currentContactId) return; // Don't send empty
+            
+            const currentUser = window.parent.currentUser;
+            
+            // Call your new, powerful sendMessage function
+            await sendMessage(currentUser.UserAccountID, currentContactId, messageContent, 'text');
+            
             // Clear the input and reload the chat
-            messageInput.value = EMPTY_STRING;
-            loadChat(currentContactId);
+            document.getElementById("txtMessage").value = '';
+            loadChatHistory(currentContactId);
+        }
+        
+        function handleAttachFile() {
+            // This is complex, for now we just log it
+            console.log("Attach file button clicked. Dropbox integration needed.");
+            alert("File attachment UI not built yet.");
+            // In a real app, this would open a file picker.
         }
 
     </script>
 </head>
 <body>
-
 <div class="chat-view">
-
+    
     <header class="chat-view__header">
-        <div class="chat-view__avatar"></div>
+        <div id="header-avatar" class="chat-view__avatar">...</div>
         <div class="chat-view__info">
-            <span class="chat-view__name"></span>
-            <span class="chat-view__status">Online</span>
+            <span id="header-name" class="chat-view__name">Select a Chat</span>
+            <span class="chat-view__status"></span>
         </div>
     </header>
 
-    <main class="chat-view__messages">
-        <div class="no-messages">Select a contact to start chatting.</div>
-    </main>
+    <main class="chat-view__messages" id="message-list">
+        </main>
 
     <footer class="chat-view__input-bar">
 
-        <button class="icon-button" id="btnAttachFile" title="Attach file">
+        <button class="icon-button" id="btnAttachFile" title="Attach file" onclick="handleAttachFile()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M5 12H19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21.44 11.05L12.25 20.24C10.12 22.37 6.63 22.37 4.5 20.24C2.37 18.11 2.37 14.62 4.5 12.5L13.69 3.31C14.89 2.11 16.7 2.11 17.9 3.31C19.1 4.51 19.1 6.32 17.9 7.52L9.41 16.01C8.81 16.61 7.86 16.61 7.26 16.01C6.66 15.41 6.66 14.46 7.26 13.86L14.83 6.29" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </button>
 
         <input type="text" id="txtMessage" class="chat-view__input-textbox" placeholder="Type a message..." />
 
-        <button class="icon-button icon-button--primary" id="btnSend" title="Send">
+        <button class="icon-button icon-button--primary" id="btnSend" title="Send" onclick="handleSendText()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </button>
     </footer>
-
-</div> </body>
+    
+</div>
+</body>
 </html>

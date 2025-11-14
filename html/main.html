@@ -12,18 +12,12 @@
     <script src="../js/database.js"></script>
     <script type="text/javascript">
 
-        // --- THIS FUNCTION HAS BEEN UPDATED ---
         async function document_onload() {
             const lblUserInfo = document.getElementById("lblUserInfo");
             currentUser = JSON.parse(sessionStorage.getItem("currentUser")); // Uses the global var
 
             if (currentUser) {
                 lblUserInfo.innerHTML = currentUser.userName + " - " + currentUser.emailAddress;
-
-                // REMOVED teammate's test code that was causing the crash.
-
-                // NEW: Tell the message-view iframe to load its contacts
-                // We will add the 'name' attribute in the next step.
                 window.frames['message-view-iframe'].loadContacts();
 
             } else {
@@ -31,34 +25,36 @@
             }
         }
 
-        // NEW: This function is called by message-view.html when a contact is clicked
+        // Called by message-view.html when a contact is clicked
         function onContactSelected(contactId) {
             console.log("main.html: onContactSelected called with contactId:", contactId);
             const chatViewIframe = window.frames['chat-view-iframe'];
             if (chatViewIframe) {
-                chatViewIframe.loadChat(contactId);
+                // --- FUNCTION NAME UPDATED ---
+                chatViewIframe.loadChatHistory(contactId);
             } else {
                 console.error("main.html: Could not find chat-view-iframe.");
             }
         }
 
+        // Called by new-message.html after a new message is sent
+        function onNewMessageSent(newContactId) {
+            closeNewMessageModal();
+            window.frames['message-view-iframe'].loadContacts();
+            window.frames['chat-view-iframe'].loadChatHistory(newContactId);
+        }
+
         function openNewMessageModal() {
             const modal = document.getElementById('new-message-modal');
             const iframe = document.getElementById('new-message-iframe');
-
-            // This loads your new-message.html page into the popup
             iframe.src = 'new-message.html';
-
             modal.classList.add('modal-overlay--visible');
         }
 
         function closeNewMessageModal() {
             const modal = document.getElementById('new-message-modal');
             const iframe = document.getElementById('new-message-iframe');
-
             modal.classList.remove('modal-overlay--visible');
-
-            // Unload the iframe to save resources
             iframe.src = '';
         }
 
@@ -68,11 +64,9 @@
             document.location = "sign-in.html";
         }
 
-        // JS functions for navigation
         function showMessages() {
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('settings-container').style.display = 'none';
-
             document.getElementById('nav-btn-messages').classList.add('nav-rail__item--active');
             document.getElementById('nav-btn-settings').classList.remove('nav-rail__item--active');
         }
@@ -80,7 +74,6 @@
         function showSettings() {
             document.getElementById('chat-container').style.display = 'none';
             document.getElementById('settings-container').style.display = 'flex';
-
             document.getElementById('nav-btn-messages').classList.remove('nav-rail__item--active');
             document.getElementById('nav-btn-settings').classList.add('nav-rail__item--active');
         }

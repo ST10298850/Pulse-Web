@@ -154,6 +154,29 @@ async function getUserByName(userName)
   return userObj;
 }
 
+async function findUserByUsernameAndPhone(userName, phoneNumber)
+{
+  const sql1 = `SELECT * FROM UserAccount WHERE userName = '${userName}' AND phoneNumber = '${phoneNumber}'`;
+  const sql1Result = await sqlQuery(sql1);
+
+  // Check if we found exactly one user
+  if (sql1Result.rows.length === 0) {
+      return null; // No user found
+  }
+
+  // We found the user, build the object and return it
+  const userObj = new Object();
+  userObj.UserAccountID = getValue(sql1Result, 0, "UserAccountID");
+  userObj.firstName = getValue(sql1Result, 0, "firstName");
+  userObj.lastName = getValue(sql1Result, 0, "lastName");
+  userObj.emailAddress = getValue(sql1Result, 0, "emailAddress");
+  userObj.phoneNumber = getValue(sql1Result, 0, "phoneNumber");
+  userObj.userName = getValue(sql1Result, 0, "userName");
+  // ... (you can add other fields if needed)
+
+  return userObj;
+}
+
 async function getUserChatList(userAccountId)
 {
     const sql = `
@@ -172,11 +195,14 @@ async function getUserChatList(userAccountId)
     return chatList;
 }
 
-async function sendMessage(senderId, receiverId, content, isHtml, attachments)
+async function sendMessage(senderId, receiverId, content, messageType = 'text', attachmentRef = '')
 {
-  const isHtmlValue = isHtml ? 1 : 0;
-  // --- THIS QUERY HAS BEEN UPDATED ---
-  const sql1 = `INSERT INTO Message (UserAccountID, textMessage, isHtml, type, voiceNoteRef) VALUES (${senderId}, '${content}', ${isHtmlValue}, 'text', '')`;
+  const isHtmlValue = 0; // We'll assume messages are not HTML for now
+  
+  // This query is now dynamic and can handle text, voice, or files
+  const sql1 = `INSERT INTO Message (UserAccountID, textMessage, isHtml, type, voiceNoteRef) 
+                VALUES (${senderId}, '${content}', ${isHtmlValue}, '${messageType}', '${attachmentRef}')`;
+  
   await sqlQuery(sql1);
 
   const sql2 = "SELECT last_insert_rowid() AS ROW_ID";
@@ -189,11 +215,13 @@ async function sendMessage(senderId, receiverId, content, isHtml, attachments)
 
 async function getMessages(senderId, receiverId)
 {
-  const sql1 = `SELECT t.UserAccountID AS senderId, c.UserAccountID AS receiverId, t.MessageID, t.textMessage, t.isHtml FROM Message t INNER JOIN IndividualChat c ON t.MessageID = c.MessageID WHERE (t.UserAccountID = ${senderId} AND c.UserAccountID = ${receiverId}) OR (t.UserAccountID = ${receiverId} AND c.UserAccountID = ${senderId})`;
+  // NEW: Added t.type and t.voiceNoteRef to the query
+  const sql1 = `SELECT t.UserAccountID AS senderId, c.UserAccountID AS receiverId, t.MessageID, t.textMessage, t.isHtml, t.type, t.voiceNoteRef 
+                FROM Message t INNER JOIN IndividualChat c ON t.MessageID = c.MessageID 
+                WHERE (t.UserAccountID = ${senderId} AND c.UserAccountID = ${receiverId}) OR (t.UserAccountID = ${receiverId} AND c.UserAccountID = ${senderId})`;
   const sql1Result = await sqlQuery(sql1);
 
   const messages = [];
-
   for(let i = 0; i < sql1Result.rows.length; i++)
   {
     const message = new Object();
@@ -202,10 +230,13 @@ async function getMessages(senderId, receiverId)
     message.messageId = getValue(sql1Result, i, "MessageID");
     message.content = getValue(sql1Result, i, "textMessage");
     message.isHtml = getValue(sql1Result, i, "isHtml");
+    
+    // NEW: Add the new fields to the object
+    message.type = getValue(sql1Result, i, "type");
+    message.voiceNoteRef = getValue(sql1Result, i, "voiceNoteRef");
 
     messages.push(message);
   }
-
   return messages;
 }
 
